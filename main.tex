@@ -1,0 +1,87 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{booktabs, tabularx, amsmath, amssymb}
+\newcolumntype{Y}[1]{>{\raggedright\arraybackslash\hsize=#1\hsize}X}
+
+\title{ArtifactSweep}
+\author{ahmedlamidi}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}
+\caption{Synthetic degradation models and real-world evaluation data.}
+\label{tab:degradations}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{1.9cm} Y{1.2} Y{0.8}@{}}
+\toprule
+\textbf{Degradation} & \textbf{Forward model} & \textbf{Real-world data} \\
+\midrule
+Low-dose &
+$y_i \sim \mathrm{Poisson}\big(\alpha b_0\, e^{-[Ax]_i}\big) + \mathcal{N}(0,\sigma_e^2)$ &
+Mayo LDCT-PD; AAPM--Mayo 2016; 2DeteCT \\
+\addlinespace
+Sparse-view &
+$\tilde p = \mathcal{P}_{\Omega}(Ax)$ \newline
+$\Omega = \{\theta_{k\Delta}\}_{k=0}^{N_v-1} \subset \Theta$ &
+Subsampled raw: Mayo LDCT-PD, Walnut CBCT, 2DeteCT \\
+\addlinespace
+Limited-angle &
+$\tilde p = \mathcal{P}_{\Omega}(Ax)$ \newline
+$\Omega = [\theta_0,\ \theta_0 + \theta_{\max}]$ &
+Cropped raw: Mayo LDCT-PD, Walnut CBCT, 2DeteCT \\
+\addlinespace
+Beam hardening &
+$y_i = \int \eta(E)\, e^{-a_i^\top \mu(E)}\, dE$ \newline
+$\tilde p = -\ln\big(y / \textstyle\int \eta\big) \approx \sum_k c_k\, p^k$ &
+2DeteCT (beam-hardening mode) \\
+\addlinespace
+Metal / starvation &
+$\mu(E) = (1-M)\odot\mu_t(E) + M\odot\mu_m(E)$ \newline
+$\bar y_i = \int \eta(E)\, e^{-a_i^\top \mu(E)}\, dE$ \newline
+$y_i \sim \mathrm{Poisson}(\bar y_i + s_i) + \mathcal{N}(0,\sigma_e^2)$ &
+CLINIC-metal; SpineWeb (no GT); AAPM CT-MAR 2023 (simulated) \\
+\addlinespace
+Motion &
+$\tilde p(\theta) = A_\theta\big(\mathcal{T}_{\phi(\theta)}\, x\big)$ &
+No paired benchmark; CQ500 (no GT) \\
+\addlinespace
+Ring / detector &
+$\tilde p_{\theta,d} = g_d\, p_{\theta,d} + o_d$ \newline
+$g_d = 0 \ \ \forall d \in \mathcal{D}_{\text{dead}}$ &
+TomoBank (real rings) \\
+\bottomrule
+\end{tabularx}
+
+\vspace{6pt}
+\begin{minipage}{\linewidth}
+\footnotesize
+\textit{Notation and parameters.}
+$x$ is the clean attenuation image, $A$ the system matrix with rows $a_i$, and $p = Ax$ the clean line integrals;
+degraded sinograms are obtained as $\tilde p = -\ln(y/b)$, where $b$ is the unattenuated flux of each ray.
+In the low-dose model, $b_0$ is the blank-scan photon count per detector bin, $\alpha \in (0,1]$ the dose fraction
+relative to full dose, and $\sigma_e$ the standard deviation of electronic readout noise.
+For sparse-view and limited-angle acquisitions, $\Theta$ is the full angular set and $\mathcal{P}_\Omega$ keeps only
+the views in $\Omega$: sparse-view keeps $N_v$ evenly spaced views with step $\Delta = |\Theta|/N_v$ (typically 18--90 views),
+whereas limited-angle keeps a contiguous arc of length $\theta_{\max}$ starting at $\theta_0$, with
+$\theta_{\max} < \pi$ for parallel beam and $\theta_{\max} < \pi + 2\gamma$ for a fan beam of half-angle $\gamma$.
+Beam hardening replaces the monoenergetic model with an integral over the source spectrum $\eta(E)$, set by tube
+voltage and filtration, and energy-dependent attenuation $\mu(E)$; the polynomial with coefficients $c_k$ is the
+common single-material approximation.
+For metal, $M$ is the binary metal mask, $\mu_t(E)$ and $\mu_m(E)$ the tissue and metal attenuation, $\bar y_i$ the expected polychromatic count, and $s_i$ additive
+scatter; photon starvation arises when $b_0 e^{-a_i^\top\mu}$ approaches zero along rays through metal, and the
+clipping applied before the logarithm must be reported.
+For motion, $A_\theta$ is the projector at view $\theta$ and $\mathcal{T}_{\phi(\theta)}$ warps the object with
+view-dependent parameters $\phi(\theta)$: a rigid rotation and translation $(R_\theta, t_\theta)$ or a deformable field.
+For ring artifacts, $d$ indexes detector elements, $g_d \sim 1 + \mathcal{N}(0,\sigma_g^2)$ is the per-element gain
+error, $o_d$ the offset error, and $\mathcal{D}_{\text{dead}}$ the set of dead elements.
+\end{minipage}
+\end{table}
+
+\end{document}
